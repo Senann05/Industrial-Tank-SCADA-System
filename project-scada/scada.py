@@ -1,0 +1,307 @@
+import serial
+import tkinter as tk
+from tkinter import font, ttk
+import threading
+import time
+from collections import deque
+import csv
+import os
+import math
+from datetime import datetime, timedelta
+import random
+
+SERIAL_PORT = 'COM5' 
+BAUD_RATE = 9600
+
+TANK_H = 17.0       
+R_BOTTOM = 4.0       
+R_TOP = 5.0         
+TEMP = 35.0         
+RHO_20 = 850.0      
+BETA = 0.73          
+
+class ProfessionalScada:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Texnoloji Çənlərdə Neft Səviyyəsinin İntellektual Ölçmə Sistemi")
+        self.root.geometry("950x680")
+        self.root.configure(bg="#0f172a") 
+        self.root.resizable(False, False)
+        
+        self.ser = None
+        self.current_percentage = 0
+        self.current_mass = 0.0
+        self.csv_file = "neft_kommersiya_ucotu.csv"
+        
+        self.init_database()
+
+        self.font_title = font.Font(family="Helvetica", size=18, weight="bold")
+        self.font_status = font.Font(family="Consolas", size=14, weight="bold")
+        self.font_scale = font.Font(family="Consolas", size=10)
+        self.font_perc = font.Font(family="Helvetica", size=26, weight="bold")
+
+        header_frame = tk.Frame(root, bg="#1e293b", height=60)
+        header_frame.pack(fill=tk.X, side=tk.TOP)
+        header_frame.pack_propagate(False)
+        tk.Label(header_frame, text="MƏRKƏZİ İDARƏETMƏ VƏ KOMMERSİYA UÇOTU PANELİ", font=self.font_title, fg="#f8fafc", bg="#1e293b").pack(pady=15)
+
+        main_frame = tk.Frame(root, bg="#0f172a")
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        left_frame = tk.Frame(main_frame, bg="#1e293b", width=350, highlightbackground="#334155", highlightthickness=2)
+        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 20))
+        left_frame.pack_propagate(False)
+        
+        tk.Label(left_frame, text="T-101 NEFT ÇƏNİ (KƏSİK KONUS)", font=self.font_status, fg="#94a3b8", bg="#1e293b").pack(pady=10)
+
+        self.canvas = tk.Canvas(left_frame, width=300, height=450, bg="#1e293b", highlightthickness=0)
+        self.canvas.pack()
+
+        self.canvas.create_polygon(120, 400, 180, 400, 200, 50, 100, 50, fill="#334155", outline="")
+        self.canvas.create_oval(100, 35, 200, 65, fill="#1e293b", outline="#64748b", width=2) 
+        self.canvas.create_oval(120, 385, 180, 415, fill="#334155", outline="") 
+
+        self.tank_liquid = self.canvas.create_polygon(120, 400, 180, 400, 180, 400, 120, 400, fill="#10b981", outline="")
+        self.tank_top = self.canvas.create_oval(120, 385, 180, 415, fill="#34d399", outline="")
+        self.tank_bottom = self.canvas.create_oval(120, 385, 180, 415, fill="#10b981", outline="")
+        
+        self.canvas.create_line(100, 50, 120, 400, fill="#cbd5e1", width=2)
+        self.canvas.create_line(200, 50, 180, 400, fill="#cbd5e1", width=2)
+        self.canvas.create_oval(120, 385, 180, 415, outline="#cbd5e1", width=2)
+
+        for i in range(0, 101, 10):
+            y = 400 - (i * 3.5)
+            x_offset = 120 - ((i/100) * 20)
+            self.canvas.create_line(x_offset-20, y, x_offset-5, y, fill="#94a3b8", width=2 if i % 25 == 0 else 1)
+            self.canvas.create_text(x_offset-40, y, text=f"{i}%", fill="#94a3b8", font=self.font_scale)
+
+        right_frame = tk.Frame(main_frame, bg="#0f172a")
+        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        status_frame = tk.Frame(right_frame, bg="#1e293b", highlightbackground="#334155", highlightthickness=2, height=130)
+        status_frame.pack(fill=tk.X, pady=(0, 15))
+        status_frame.pack_propagate(False)
+
+        tk.Label(status_frame, text="CANLI PARAMETRLƏR VƏ KÜTLƏ UÇOTU", font=self.font_status, fg="#94a3b8", bg="#1e293b").pack(anchor=tk.W, padx=15, pady=5)
+        
+        self.lbl_perc = tk.Label(status_frame, text="0%", font=self.font_perc, fg="#f8fafc", bg="#1e293b")
+        self.lbl_perc.place(x=15, y=40)
+
+        # YENİ: Kütlə İndikatoru
+        self.lbl_mass = tk.Label(status_frame, text="0.000 kq", font=("Consolas", 14, "bold"), fg="#38bdf8", bg="#1e293b")
+        self.lbl_mass.place(x=15, y=90)
+
+        self.lbl_status = tk.Label(status_frame, text="SİSTEM BAŞLADILIR...", font=("Consolas", 16, "bold"), fg="#eab308", bg="#1e293b")
+        self.lbl_status.place(x=120, y=55)
+
+        control_frame = tk.Frame(right_frame, bg="#1e293b", highlightbackground="#334155", highlightthickness=2, height=80)
+        control_frame.pack(fill=tk.X, pady=(0, 15))
+        control_frame.pack_propagate(False)
+        
+        btn_frame = tk.Frame(control_frame, bg="#1e293b")
+        btn_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=20)
+        
+        self.is_muted = False
+        self.btn_mute = tk.Button(btn_frame, text="🔊 BUZZER", font=("Consolas", 11, "bold"), bg="#10b981", fg="white", cursor="hand2", command=self.toggle_mute)
+        self.btn_mute.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+        
+        self.are_leds_off = False
+        self.btn_led = tk.Button(btn_frame, text="💡 LED-lər", font=("Consolas", 11, "bold"), bg="#10b981", fg="white", cursor="hand2", command=self.toggle_leds)
+        self.btn_led.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        trend_frame = tk.Frame(right_frame, bg="#1e293b", highlightbackground="#334155", highlightthickness=2)
+        trend_frame.pack(fill=tk.BOTH, expand=True)
+        
+        trend_header = tk.Frame(trend_frame, bg="#1e293b")
+        trend_header.pack(fill=tk.X, padx=15, pady=5)
+        
+        tk.Label(trend_header, text="SƏVİYYƏ TRENDİ", font=self.font_status, fg="#94a3b8", bg="#1e293b").pack(side=tk.LEFT)
+        
+        self.btn_history = tk.Button(trend_header, text="📊 HESABAT VƏ CƏDVƏL", font=("Consolas", 10, "bold"), bg="#3b82f6", fg="white", activebackground="#2563eb", cursor="hand2", command=self.open_history_window)
+        self.btn_history.pack(side=tk.RIGHT)
+
+        self.graph_canvas = tk.Canvas(trend_frame, bg="#020617", highlightthickness=0)
+        self.graph_canvas.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
+        
+        self.history = deque([0]*50, maxlen=50)
+
+        self.running = True
+        self.serial_thread = threading.Thread(target=self.read_serial, daemon=True)
+        self.serial_thread.start()
+        
+        self.logger_thread = threading.Thread(target=self.log_data_minutely, daemon=True)
+        self.logger_thread.start()
+
+    def calculate_mass(self, percentage):
+        if percentage <= 0: return 0.0
+        h = (percentage / 100.0) * TANK_H
+        r_h = R_BOTTOM + (h / TANK_H) * (R_TOP - R_BOTTOM)
+        v_cm3 = (math.pi * h / 3.0) * (R_BOTTOM**2 + R_BOTTOM * r_h + r_h**2)
+        rho_t = RHO_20 - BETA * (TEMP - 20.0)
+        mass_kg = (v_cm3 / 1000000.0) * rho_t
+        return mass_kg
+
+    def init_database(self):
+        if not os.path.exists(self.csv_file):
+            with open(self.csv_file, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["Tarix_Saat", "Seviyye_Faizi", "Kutle_KQ"])
+                
+                now = datetime.now()
+                for i in range(180, 0, -1):
+                    past_date = now - timedelta(days=i*2)
+                    fake_level = random.randint(25, 85) 
+                    fake_mass = self.calculate_mass(fake_level)
+                    writer.writerow([past_date.strftime("%Y-%m-%d %H:%M:%S"), fake_level, f"{fake_mass:.3f}"])
+
+    def log_data_minutely(self):
+        while self.running:
+            time.sleep(60) 
+            try:
+                with open(self.csv_file, mode='a', newline='') as file:
+                    writer = csv.writer(file)
+                    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    writer.writerow([now, self.current_percentage, f"{self.current_mass:.3f}"])
+            except Exception:
+                pass
+
+    def open_history_window(self):
+        hist_win = tk.Toplevel(self.root)
+        hist_win.title("Kommersiya Uçotu - Məlumat Bazası")
+        hist_win.geometry("900x500")
+        hist_win.configure(bg="#0f172a")
+        hist_win.grab_set() 
+
+        tk.Label(hist_win, text="T-101 ÇƏNİ: İLLİK KÜTLƏ VƏ SƏVİYYƏ UÇOTU", font=self.font_title, fg="#f8fafc", bg="#0f172a").pack(pady=10)
+
+        style = ttk.Style()
+        style.theme_use("default")
+        style.configure("Treeview", background="#1e293b", foreground="white", rowheight=25, fieldbackground="#1e293b")
+        style.map('Treeview', background=[('selected', '#3b82f6')])
+        style.configure("Treeview.Heading", background="#334155", foreground="white", font=('Consolas', 11, 'bold'))
+
+        tree_frame = tk.Frame(hist_win, bg="#0f172a")
+        tree_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+
+        columns = ("Tarix", "Səviyyə (%)", "Kütlə (kq)")
+        tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
+        tree.heading("Tarix", text="TARİX VƏ SAAT")
+        tree.heading("Səviyyə (%)", text="SƏVİYYƏ (%)")
+        tree.heading("Kütlə (kq)", text="HESABLANMIŞ KÜTLƏ (KQ)")
+        
+        tree.column("Tarix", width=200, anchor=tk.CENTER)
+        tree.column("Səviyyə (%)", width=100, anchor=tk.CENTER)
+        tree.column("Kütlə (kq)", width=150, anchor=tk.CENTER)
+
+        scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        try:
+            with open(self.csv_file, mode='r') as file:
+                reader = csv.reader(file)
+                next(reader) 
+                for row in reversed(list(reader)): # Ən yenilər üstdə görünsün
+                    if len(row) >= 3:
+                        tree.insert("", tk.END, values=(row[0], f"{row[1]} %", f"{row[2]} kq"))
+        except:
+            pass
+
+    def toggle_mute(self):
+        self.is_muted = not self.is_muted
+        if self.is_muted:
+            self.btn_mute.config(text="🔇 MUTE", bg="#ef4444")
+        else:
+            self.btn_mute.config(text="🔊 BUZZER", bg="#10b981")
+        if self.ser and self.ser.is_open:
+            self.ser.write(b"MUTE_TOGGLE\n")
+
+    def toggle_leds(self):
+        self.are_leds_off = not self.are_leds_off
+        if self.are_leds_off:
+            self.btn_led.config(text="🔌 LED OFF", bg="#ef4444")
+        else:
+            self.btn_led.config(text="💡 LED ON", bg="#10b981")
+        if self.ser and self.ser.is_open:
+            self.ser.write(b"LED_TOGGLE\n")
+
+    def update_ui(self, percentage):
+        self.current_percentage = percentage 
+        self.current_mass = self.calculate_mass(percentage)
+        
+        if percentage > 80:
+            color_main, color_light, status_txt, status_col = "#dc2626", "#ef4444", "KRİTİK DAŞMA XƏTƏRİ!", "#ef4444"
+        elif percentage < 15:
+            color_main, color_light, status_txt, status_col = "#ea580c", "#f97316", "KRİTİK BOŞALMA!", "#f97316"
+        elif 35 <= percentage <= 65:
+            color_main, color_light, status_txt, status_col = "#059669", "#10b981", "NORMAL İŞ REJİMİ", "#10b981"
+        else:
+            color_main, color_light, status_txt, status_col = "#ca8a04", "#eab308", "XƏBƏRDARLIQ ZONASI", "#eab308"
+
+        self.lbl_perc.config(text=f"{percentage}%", fg=status_col)
+        self.lbl_mass.config(text=f"{self.current_mass:.3f} kq")
+        self.lbl_status.config(text=status_txt, fg=status_col)
+
+        # Kəsik konus vizualının yenilənməsi
+        y_pos = 400 - (percentage * 3.5)
+        if y_pos > 395: y_pos = 395 
+        
+        x_left_bottom = 120
+        x_right_bottom = 180
+        x_left_top = 120 - ((percentage/100) * 20)
+        x_right_top = 180 + ((percentage/100) * 20)
+        
+        self.canvas.coords(self.tank_liquid, x_left_bottom, 400, x_right_bottom, 400, x_right_top, y_pos, x_left_top, y_pos)
+        self.canvas.coords(self.tank_top, x_left_top, y_pos-15, x_right_top, y_pos+15)
+        self.canvas.itemconfig(self.tank_liquid, fill=color_main)
+        self.canvas.itemconfig(self.tank_top, fill=color_light)
+        self.canvas.itemconfig(self.tank_bottom, fill=color_main)
+
+        self.history.append(percentage)
+        self.draw_graph(status_col)
+
+    def draw_graph(self, line_color):
+        self.graph_canvas.delete("all")
+        width = self.graph_canvas.winfo_width()
+        height = self.graph_canvas.winfo_height()
+        if width <= 1: width = 500
+        if height <= 1: height = 200
+
+        for i in range(1, 4):
+            y = height - (i * height / 4)
+            self.graph_canvas.create_line(0, y, width, y, fill="#1e293b", dash=(4, 4))
+
+        step_x = width / (len(self.history) - 1)
+        points = []
+        for i, val in enumerate(self.history):
+            x = i * step_x
+            y = height - (val / 100.0 * height)
+            points.extend([x, y])
+            
+        if len(points) >= 4:
+            self.graph_canvas.create_line(*points, fill=line_color, width=3, smooth=True)
+
+    def read_serial(self):
+        try:
+            self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+            time.sleep(2)
+            
+            while self.running:
+                if self.ser.in_waiting > 0:
+                    line = self.ser.readline().decode('utf-8').strip()
+                    if '%' in line:
+                        try:
+                            value = int(line.replace('%', ''))
+                            if 0 <= value <= 100:
+                                self.root.after(0, self.update_ui, value)
+                        except ValueError:
+                            pass
+                time.sleep(0.05)
+        except Exception:
+            self.root.after(0, lambda: self.lbl_status.config(text="ƏLAQƏ KƏSİLDİ!", fg="#ef4444"))
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ProfessionalScada(root)
+    root.mainloop()
