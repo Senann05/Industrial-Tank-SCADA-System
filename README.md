@@ -1,9 +1,56 @@
 # 🛢️ Intelligent SCADA & Level Measurement System for Technological Tanks
 
-![Project Status](https://img.shields.io/badge/Status-Completed-success)
-![Hardware](https://img.shields.io/badge/Hardware-Arduino_Uno-blue)
-![Software](https://img.shields.io/badge/Software-Python_Tkinter-yellow)
-![Domain](https://img.shields.io/badge/Domain-Industrial_Automation-orange)
+<details>
+  <summary><b>🖥️ 1. Operational Statuses (Click to expand SCADA HMI)</b></summary>
+
+  <br>
+  Demonstrating the dynamic UI logic, color-coded safety zones, and real-time mathematical calculations:
+  
+  * **Normal Operation (Safe Zone):**
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/50.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/50i.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/50k.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/51.jpeg)
+
+
+
+  
+  * **Warning State (Approaching Limit):**
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/25.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/25i.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/25k.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/70.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/70i.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/70k.jpeg)
+  
+  * **Critical State (Overfill / Empty):**
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/11.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/11i.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/11k.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/90.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/90i.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/90k.jpeg)
+
+</details>
+
+<details>
+  <summary><b>⚙️ 2. Physical Simulation & Hardware Layout (Click to expand)</b></summary>
+
+**
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/s.jpeg)
+    > ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/sr.jpeg)
+
+</details>
+
+<details>
+  <summary><b>📊 3. Commercial Data Logging (Click to expand)</b></summary>
+  
+**
+    ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/90k.jpeg)
+    ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/data.png)
+    ![Normal Status](https://github.com/Senann05/Industrial-Tank-SCADA-System/blob/main/Images%20(2)/60sec.png)
+
+</details>
   
 ## 📌 Project Overview
 This project is a scaled-down, fully functional prototype of an industrial tank monitoring and commercial accounting system. It integrates field-level sensor data acquisition with a custom-developed Supervisory Control and Data Acquisition (SCADA) interface. Designed with global energy industry standards in mind, the system performs real-time edge computing, fluid mass calculation based on thermodynamic principles, and automated data logging for retrospective analysis.
