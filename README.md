@@ -1,46 +1,9 @@
 # 🛢️ Intelligent SCADA & Level Measurement System for Technological Tanks
 
-<details>
-  <summary><b>🖥️ 1. Operational Statuses (Click to expand SCADA HMI)</b></summary>
-
-  <br>
-  Demonstrating the dynamic UI logic, color-coded safety zones, and real-time mathematical calculations:
-  
-  * **Normal Operation (Safe Zone):**
-    > `![Normal Status](link-to-green-tank-image.png)`
-  
-  * **Warning State (Approaching Limit):**
-    > `![Warning Status](link-to-yellow-tank-image.png)`
-  
-  * **Critical State (Overfill / Empty):**
-    > `![Critical Status](link-to-red-tank-image.png)`
-
-</details>
-
-<details>
-  <summary><b>⚙️ 2. Physical Simulation & Hardware Layout (Click to expand)</b></summary>
-
-  <br>
-  The actual edge-computing hardware setup processing microsecond wave data:
-  
-  * **System in Action:**
-    > `![Simulation](link-to-simulation-photo.jpg)`
-  
-  * **Microcontroller & Wiring Detail:**
-    > `![Hardware Setup](link-to-breadboard-wiring.jpg)`
-
-</details>
-
-<details>
-  <summary><b>📊 3. Commercial Data Logging (Click to expand)</b></summary>
-
-  <br>
-  Background multi-threading operations generating commercial accounting data:
-  
-  * **Automated CSV Database Output:**
-    > `![Data Log Output](link-to-csv-screenshot.png)`
-
-</details>
+![Project Status](https://img.shields.io/badge/Status-Completed-success)
+![Hardware](https://img.shields.io/badge/Hardware-Arduino_Uno-blue)
+![Software](https://img.shields.io/badge/Software-Python_Tkinter-yellow)
+![Domain](https://img.shields.io/badge/Domain-Industrial_Automation-orange)
   
 ## 📌 Project Overview
 This project is a scaled-down, fully functional prototype of an industrial tank monitoring and commercial accounting system. It integrates field-level sensor data acquisition with a custom-developed Supervisory Control and Data Acquisition (SCADA) interface. Designed with global energy industry standards in mind, the system performs real-time edge computing, fluid mass calculation based on thermodynamic principles, and automated data logging for retrospective analysis.
