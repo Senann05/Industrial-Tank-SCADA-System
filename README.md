@@ -1,7 +1,7 @@
 # 🛢️ Intelligent SCADA & Level Measurement System for Technological Tanks
 
 ## 📸 System Previews & Snapshots
-<details>
+<details open>
   <summary><b>🖥️ 1. Operational Statuses (Click to expand SCADA HMI)</b></summary>
 
   <br>
