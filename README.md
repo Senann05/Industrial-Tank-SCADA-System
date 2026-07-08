@@ -87,16 +87,3 @@ The commercial accounting module relies on precise physical formulas embedded in
 2. **Temperature-Corrected Density:** `ρ_t = ρ_20 - β * (T - 20)`
 3. **Absolute Mass Calculation:** `Mass (kg) = (V / 1,000,000) * ρ_t`
 
-## 🚀 Getting Started
-
-### Prerequisites
-* Arduino IDE (for C++ firmware)
-* Python 3.8+ 
-* Required Python libraries: `pip install pyserial`
-
-### Installation & Usage
-1. **Hardware Setup:** Wire the HC-SR04, LEDs, and Buzzer to the Arduino via a breadboard (Refer to the circuit diagram).
-2. **Upload Firmware:** Open `firmware/tank_level_controller.ino` in Arduino IDE, select your COM port, and upload it to the board.
-3. **Launch SCADA:** Navigate to the `scada/` directory and run the main Python script:
-   ```bash
-   python main_hmi.py
